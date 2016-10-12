@@ -1,0 +1,4 @@
+1 supernova
+2 nova
+3 nova
+4 supernova
