@@ -9,11 +9,6 @@ data_file = open("transients.txt")
 num_lines = sum(1 for line in open('transients.txt'))  # number of lines in the file
 transients = []  # create list of transients
 
-<<<<<<< HEAD
-=======
-# read file
->>>>>>> master
-
 print('number of lines: ', num_lines)
 
 # fill transient array with transients from file
@@ -39,6 +34,4 @@ print('First transient category: ', transients[0].get_cat())
 # save new transients to file
 # close file
 data_file.close()
-
-delay = input('Press Enter to Quit.')
 
