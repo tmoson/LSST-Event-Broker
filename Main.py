@@ -9,6 +9,10 @@ data_file = open("transients.txt")
 num_lines = sum(1 for line in open('transients.txt'))  # number of lines in the file
 transients = []  # create list of transients
 
+<<<<<<< HEAD
+=======
+# read file
+>>>>>>> master
 
 print('number of lines: ', num_lines)
 
