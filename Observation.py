@@ -3,9 +3,6 @@
 
 class Observation:
     # variables
-    __time_obs = 0  # time observed
-    __location = 0
-    __magnitude = 0
 
     def __init__(self, time, loc, mag):
         self.__time_obs = time
