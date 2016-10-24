@@ -17,6 +17,7 @@ class Transient:
 
     def add_observation(self, time, loc, mag):
         obs = Observation(time, loc, mag)
+<<<<<<< Updated upstream
         self.__observations.append(obs)
 
     def add_observation(self, observation):
