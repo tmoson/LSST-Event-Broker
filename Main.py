@@ -1,7 +1,6 @@
 from Observation import Observation
 from Transient import Transient
-import time
-import os
+import random
 
 # open file
 data_file = open("transients.txt")
@@ -25,11 +24,28 @@ print('First transient location: ', transients[0].get_loc())
 print('First transient category: ', transients[0].get_cat())
 
 # being MAIN LOOP
-# while True:
-    # get time series (or an Observation from Generator
+# MAIN LOOP
+alive = True
+while alive:
+    print("MENU")
+    print("1- Receive Alert")
+    print("2- Quit")
+    cmd = input()
 
-    # compare to current Transients
-    # for observation in transients:
+    if cmd == 1:
+        # get an observation
+        obs = Observation(random.randint(1000, 2000), random.randint(0, 10), random.randint(0, 100))
+        # if transient is available add obs
+        if transients[obs.get_loc()]:
+            transients[obs.get_loc()].add_observation(obs)
+        else:
+            t = Transient(obs.get_loc(), None)
+            transients.insert(obs.get_loc(), t)
+            num_lines += 1
+
+    if cmd == 2:
+        alive = False
+
 
 # save new transients to file
 # close file
