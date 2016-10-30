@@ -1,0 +1,100 @@
+1-supernova
+2-black hole
+3-asteroid
+4-asteroid
+5-nova
+6-asteroid
+7-flare star
+8-asteroid
+9-asteroid
+10-nova
+11-flare star
+12-star
+13-black hole
+14-nova
+15-asteroid
+16-meteoroid
+17-comet
+18-comet
+19-flare star
+20-supernova
+21-asteroid
+22-nova
+23-comet
+24-comet
+25-meteoroid
+26-black hole
+27-flare star
+28-asteroid
+29-star
+30-black hole
+31-supernova
+32-comet
+33-flare star
+34-star
+35-black hole
+36-flare star
+37-star
+38-supernova
+39-black hole
+40-flare star
+41-flare star
+42-comet
+43-meteoroid
+44-supernova
+45-meteoroid
+46-meteoroid
+47-supernova
+48-star
+49-supernova
+50-comet
+51-nova
+52-meteoroid
+53-flare star
+54-black hole
+55-star
+56-black hole
+57-flare star
+58-meteoroid
+59-nova
+60-meteoroid
+61-asteroid
+62-comet
+63-nova
+64-supernova
+65-meteoroid
+66-star
+67-comet
+68-flare star
+69-nova
+70-flare star
+71-asteroid
+72-nova
+73-black hole
+74-flare star
+75-flare star
+76-asteroid
+77-flare star
+78-star
+79-flare star
+80-nova
+81-star
+82-flare star
+83-supernova
+84-flare star
+85-comet
+86-star
+87-star
+88-asteroid
+89-comet
+90-comet
+91-black hole
+92-flare star
+93-black hole
+94-meteoroid
+95-star
+96-supernova
+97-nova
+98-comet
+99-star
+100-black hole
