@@ -12,7 +12,7 @@ i = 0
 while i < 10:
     file_name = str(i) + ".txt"
     file = open(file_name, 'w+')
-    file.write(str(randint(1000, 2000)) + " " + str(randint(0, 10)) + " " + str(randint(0, 100)))
+    file.write(str(randint(1000, 2000)) + "-" + str(randint(0, 10)) + "-" + str(randint(0, 100)))
     file.close()
     i += 1
 
