@@ -4,7 +4,7 @@ from random import randint
 
 # open file
 trans_file = open("trans_db/transients.txt", 'r')
-t_num_lines = sum(1 for line in open('trans_db/transients.txt'))  # number of lines in the file
+t_num_lines = sum(1 for line in trans_file)  # number of lines in the file
 trans_file.close()
 transients = []  # create list of transients
 
@@ -34,14 +34,15 @@ while ts <= t_num_lines:
     file_o_name = "trans_db/" + str(ts) + ".txt"
     file_o = open(file_o_name, 'w+')
     ln_o = file_o.readline()
-    try:
+    print("ln_o before if statement: ", ln_o)
+    if ln_o != "":
         ln_o_list = ln_o.split("-")
         time = ln_o_list[0]
         mag = ln_o_list[2]
         obs = Observation(time, ts, mag)
         transients[ts].add_observation(obs)
-    except IndexError:
-        print("observation not available.")
+    else:
+        file_o.write(str(randint(1000, 2000)) + "-" + str(randint(0, 10)) + "-" + str(randint(0, 100)))
     file_o.close()
     ts += 1
 
