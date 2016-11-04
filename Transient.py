@@ -10,13 +10,15 @@ class Transient:
         self.__location = loc
         self.__category = cat
         self.__observations = []
-        self.__t1 = {}
-        self.__t2 = {}
-        self.cls = Classifier
+        self.t1 = []
+        self.t2 = []
+        self.cls = Classifier()
         for i in range (0, 100):
-            self.__t1[i] = get_function_1()
-            self.__t2[i] = get_function_2(i)
-        self.__classes = { 'Supernova':self.cls.summarize(self.__t1), 'Nova':self.cls.summarize(self.__t2)}
+            self.t1.append(get_function_1())
+            self.t2.append(get_function_2(i))
+        self.__s1 = [self.cls.mean(self.t1), self.cls.stdev(self.t2)]
+        self.__s2 = [self.cls.mean(self.t2), self.cls.stdev(self.t2)]
+        self.__classes = {'Supernova':self.__s1, 'Nova':self.__s2}
 
     def get_loc(self):
         return self.__location
@@ -33,4 +35,7 @@ class Transient:
         return self.__observations
 
     def update_probability(self):
-        self.classification =  self.cls.predict(self.cls.summarize(self.__observations), self.__classes)
+        self.__classification =  self.cls.predict([self.cls.summarize(self.__observations), self.__classes)
+
+    def get_classification(self):
+        return self.__classification
