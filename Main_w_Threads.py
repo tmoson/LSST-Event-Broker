@@ -32,11 +32,20 @@ def daemon_process_observation():
             # if transient is available add obs
             #print(str(obs.get_loc()))
             # create Transient if it is the first observation or just add Observation
-            transients.setdefault(obs.get_loc(), Transient(obs.get_loc(), None)).add_observation(obs)
-            file_t_name = "transients.txt"
-            file_t = open(file_t_name, 'a+')
-            file_t.write(str(obs.get_loc()) + " " + str(transients[obs.get_loc()].get_cat()) + "\n")
-            file_t.close()
+            try:
+                transients[obs.get_loc()].add_observation(obs)
+            except TypeError:
+                transients.setdefault(obs.get_loc(), Transient(obs.get_loc(), None)).add_observation(obs)
+                file_t_name = "transients.txt"
+                file_t = open(file_t_name, 'a+')
+                file_t.write(str(obs.get_loc()) + "-" + str(transients[obs.get_loc()].get_cat()) + "\n")
+                file_t.close()
+
+            #add observation to txt
+            file_o_name = "trans_db/" + str(obs.get_loc()) + ".txt"
+            file_o = open(file_o_name, 'a+')
+            file_o.write(str(obs.get_time()) + "-" + str(obs.get_loc()) + "-" + str(obs.get_mag()) + "\n")
+            file_o.close()
             # Update probability either by creating a new thread or in the add_observation method
             # TO BE TESTED
             # transients[obs.get_loc()].update_probability
