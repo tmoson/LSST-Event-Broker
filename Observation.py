@@ -1,13 +1,13 @@
-# import
 
 
 class Observation:
-    # variables
 
-    def __init__(self, time, loc, mag):
+    def __init__(self, time, loc, mag, ra=None, dec=None):
         self.__time_obs = time
         self.__location = loc
         self.__magnitude = mag
+        self.__ra = ra
+        self.__dec = dec
 
     def set_time(self, time):
         self.__time_obs = time

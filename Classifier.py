@@ -4,6 +4,7 @@ import math
 # machinelearningmastery.com, and can be found at
 # http://www.machinelearningmastery.com/naive-bayes-classifier-scratch-python/
 
+
 class Classifier:
 
     def splitDataset(self, dataset, splitRatio):
