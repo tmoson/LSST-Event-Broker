@@ -4,16 +4,37 @@ import os
 
 
 def buildTableClassifiers():
-    query = "Select ClassifierID, Name, Min, Max, Description From Classifier, Model Where Classifier.ModelID = Model.ModelID"
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    print("+----+---------------------+------+------+---------------------+")
-    print("|\033[1m %2s \033[0m|\033[1m %19s \033[0m|\033[1m %4s \033[0m|\033[1m %4s \033[0m|\033[1m %19s \033[0m|" % (
-        'ID', 'Name', 'Min', 'Max', 'Classifies'))
-    print("|----+---------------------+------+------+---------------------|")
-    for row in rows:
-        print("|%4s| %20s| %5s| %5s| %20s|" % (row.ClassifierID, row.Name, row.Min, row.Max, row.Description))
-    print("+----+---------------------+------+------+---------------------+")
+    lock.acquire()
+    try:
+        query = "Select ClassifierID, Name, Min, Max, Description From Classifier, Model Where Classifier.ModelID = Model.ModelID"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        print("+----+---------------------+------+------+---------------------+")
+        print("|\033[1m %2s \033[0m|\033[1m %19s \033[0m|\033[1m %4s \033[0m|\033[1m %4s \033[0m|\033[1m %19s \033[0m|" % (
+            'ID', 'Name', 'Min', 'Max', 'Classifies'))
+        print("|----+---------------------+------+------+---------------------|")
+        for row in rows:
+            print("|%4s| %20s| %5s| %5s| %20s|" % (row.ClassifierID, row.Name, row.Min, row.Max, row.Description))
+        print("+----+---------------------+------+------+---------------------+")
+    finally:
+        lock.release()
+
+
+def buildTableModel():
+    lock.acquire()
+    try:
+        query = "Select ModelID, Description From Model"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        print("+----+---------------------+")
+        print("|\033[1m %2s \033[0m|\033[1m %19s \033[0m|" % (
+            'ID', 'Description'))
+        print("|----+---------------------|")
+        for row in rows:
+            print("|%4s| %20s|" % (row.ModelID, row.Description))
+        print("+----+---------------------+")
+    finally:
+        lock.release()
 
 
 #connect to database
@@ -43,6 +64,7 @@ def daemon_receive_alerts():
             cursor.execute(query)
             row = cursor.fetchone()
             t = row[0]
+            # If transient is not stored yet
             if not t:
                 cursor.execute("Insert into Transient ( Class, Location, ModelID, ClassifiedWith ) VALUES ('%s', %d, '1', '1'" %(name, loc))
                 cursor.commit()
@@ -56,7 +78,7 @@ def daemon_receive_alerts():
             # testing purpose
             # print("Alert received")
         except pyodbc.DatabaseError:
-            print("rip")
+            print("Oberservation storage error")
         finally:
             lock.release()
             # time.sleep(0.1)
@@ -64,10 +86,8 @@ def daemon_receive_alerts():
 
 # create a thread that runs the daemon_receive_alerts method
 Alertstream = threading.Thread(name='Alertstream', target=daemon_receive_alerts)
-# set the thread as a daemon so it runs constantly in the background
-Alertstream.setDaemon(True)
 # run the thread
-#Alertstream.start()
+Alertstream.start()
 
 # being MAIN LOOP
 # MAIN LOOP
@@ -79,16 +99,17 @@ try:
         print("2 Show Classifiers")
         print("3 Show Models")
         print("4 Quit")
-        cmd1 = input()
+        cmd1 = input("Enter digit: ")
 
         if cmd1 == str(1):
             print("Choose File")
+        # CLASSIFIER
         elif cmd1 == str(2):
             lock.acquire()
             try:
                 buildTableClassifiers()
             except pyodbc.DatabaseError:
-                print("rip")
+                print("Could not load table")
             finally:
                 lock.release()
             menu = True
@@ -98,11 +119,11 @@ try:
                 print("2 Change Classifier [-ID]")
                 print("3 Delete Classifier [-ID]")
                 print("4 Back")
-                cmd2 = input().split()
+                cmd2 = input("Enter digit: ").split()
 
                 try:
                     if len(cmd2) == 1 and (cmd2[0] != '1' and cmd2[0] != '4'):
-                        print("Please choose the ID of the Classifier")
+                        print("Please choose the ID of the Classifier (e.g. -1)")
                     elif cmd2[0] == str(1):
                         try:
                             name = input("Name: ")
@@ -169,7 +190,7 @@ try:
                                                 raise pyodbc.DatabaseError
                                             else:
                                                 desc = row.ModelID
-                                        query = "UPDATE Classifier Set Name = '%s', Min = %d,  Max = %d where ClassifierID = %d" %(name, min, max, desc)
+                                        query = "UPDATE Classifier Set Name = '%s', Min = %d,  Max = %d, ModelID = %d where ClassifierID = %d" %(name, min, max, desc, id)
                                         cursor.execute(query)
                                         cursor.commit()
                                     except pyodbc.DatabaseError:
@@ -215,13 +236,105 @@ try:
                         print("Option not available")
                 except IndexError:
                     print()
+        # MODEL
         elif cmd1 == str(3):
-            print("Choose File")
+            lock.acquire()
+            try:
+                buildTableModel()
+            except pyodbc.DatabaseError:
+                print("Could not load table")
+            finally:
+                lock.release()
+            menu = True
+            while menu:
+                print("MENU")
+                print("1 ADD Model")
+                print("2 Change Model [-ID]")
+                print("3 Delete Model [-ID]")
+                print("4 Back")
+                cmd3 = input("Enter digit: ").split()
+
+                try:
+                    if len(cmd3) == 1 and (cmd3[0] != '1' and cmd3[0] != '4'):
+                        print("Please choose the ID of the Classifier (e.g. -1)")
+                    elif cmd3[0] == str(1):
+                        try:
+                            name = input("Name: ")
+                            lock.acquire()
+                            try:
+                                query = "INSERT INTO Model ( Description ) VALUES ('%s')" % name
+                                cursor.execute(query)
+                                cursor.commit()
+                            except pyodbc.DatabaseError:
+                                print("Insert failed")
+                            finally:
+                                lock.release()
+                        except ValueError:
+                            print('Input error')
+                        buildTableModel()
+
+                    elif cmd3[0] == str(2):
+                        try:
+                            id = int(cmd3[1][1:])
+                            if cmd3[1][:1] == '-' and id:
+                                try:
+                                    name = input("Name: ")
+                                    lock.acquire()
+                                    try:
+                                        query = "UPDATE Model Set Description = '%s' where ModelID = %d" % (name, id)
+                                        cursor.execute(query)
+                                        cursor.commit()
+                                    except pyodbc.DatabaseError:
+                                        print("ID not found")
+                                    finally:
+                                        lock.release()
+                                except ValueError:
+                                    print('Input error')
+                                buildTableModel()
+                            else:
+                                print("ID format incorrect")
+                        except ValueError:
+                            print("ID format incorrect")
+                    elif cmd3[0] == str(3):
+                        try:
+                            id = int(cmd3[1][1:])
+                            if cmd3[1][:1] == '-' and id:
+                                incorrect = True
+                                while incorrect:
+                                    a = input("Delete Model with ID " + str(id) + "? [y/n]: ")
+                                    if a == 'y':
+                                        lock.acquire()
+                                        try:
+                                            query = "Delete From Model Where ModelID=%d" % id
+                                            cursor.execute(query)
+                                            cursor.commit()
+                                        except pyodbc.DatabaseError:
+                                            print("ID not found")
+                                        finally:
+                                            lock.release()
+                                        buildTableModel()
+                                        incorrect = False
+                                    elif a == 'n':
+                                        incorrect = False
+                                        buildTableModel()
+                                    else:
+                                        print("Input error")
+
+                        except ValueError:
+                            print("ID format incorrect")
+                    elif cmd3[0] == str(4):
+                        menu = False
+                    else:
+                        print("Option not available")
+                except IndexError:
+                    print()
+        # QUIT
         elif cmd1 == str(4):
             alive = False
         else:
             print("Option not available")
 finally:
+    Alertstream.join()
     cursor.close()
     cnxn.close()
 #
