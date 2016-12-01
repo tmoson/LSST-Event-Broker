@@ -195,6 +195,7 @@ try:
                                         try:
                                             query = "Delete From Classifier Where ClassifierID=%d" % id
                                             cursor.execute(query)
+                                            cursor.commit()
                                         except pyodbc.DatabaseError:
                                             print("ID not found")
                                         finally:
