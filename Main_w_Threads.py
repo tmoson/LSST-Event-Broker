@@ -1,7 +1,7 @@
 import threading
 import pyodbc
 import os
-
+import time
 
 def buildTableClassifiers():
     lock.acquire()
@@ -57,16 +57,17 @@ def daemon_receive_alerts():
             loc = 1
             magnitude = 1
             # Find right transient
-            name = "Lyrae"
+            name = "fgjh"
 
             query = "Select TransientID From Transient Where Class='%s' AND Location = %d" %(name, loc)
 
             cursor.execute(query)
             row = cursor.fetchone()
-            t = row[0]
+            try:
+                t = row[0]
             # If transient is not stored yet
-            if not t:
-                cursor.execute("Insert into Transient ( Class, Location, ModelID, ClassifiedWith ) VALUES ('%s', %d, '1', '1'" %(name, loc))
+            except TypeError:
+                cursor.execute("Insert into Transient ( Class, Location, ModelID, LastClassifiedWith, Classified ) VALUES ('%s', %d, 1, 1, False)" % (name, loc))
                 cursor.commit()
                 cursor.execute(query)
                 row = cursor.fetchone()
@@ -83,11 +84,36 @@ def daemon_receive_alerts():
             lock.release()
             # time.sleep(0.1)
 
+def daemon_send_transients():
+    while alive:
+        lock.acquire()
+        try:
+            query = "Select * From Transient Where Classified = True"
+            # store Observation
+            cursor.execute(query)
+            row = cursor.fetchone()
+            try:
+                t = row[0]
+                if t:
+                    # send Transient
+                    id = row.TransientID
+                    query = "Delete From Transient Where TransientID = %d" % id
+                    cursor.execute(query)
+                    cursor.commit()
+            except TypeError:
+                pass
+        except pyodbc.DatabaseError:
+            print("Transient Classify error")
+        finally:
+            lock.release()
+            # time.sleep(0.1)
 
 # create a thread that runs the daemon_receive_alerts method
 Alertstream = threading.Thread(name='Alertstream', target=daemon_receive_alerts)
+Transientstream = threading.Thread(name='Transientstream', target=daemon_send_transients)
 # run the thread
 Alertstream.start()
+Transientstream.start()
 
 # being MAIN LOOP
 # MAIN LOOP
@@ -95,7 +121,7 @@ alive = True
 try:
     while alive:
         print("MENU")
-        print("1 Classify Transients")
+        print("1 Set Classifiers")
         print("2 Show Classifiers")
         print("3 Show Models")
         print("4 Quit")
