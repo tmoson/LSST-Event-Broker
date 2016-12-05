@@ -2,6 +2,7 @@ import threading
 import pyodbc
 import os
 import time
+from collections import deque
 
 def buildTableClassifiers():
     lock.acquire()
@@ -38,28 +39,29 @@ def buildTableModel():
 
 
 #connect to database
-db = os.getcwd() + "\EventBroker.accdb"
-cnxn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ='+db)
+db = os.getcwd() + "/EventBroker.db"
+#cnxn = pyodbc.connect(r'DSN=MyConnection;DBQ='+db)
+cnxn = pyodbc.connect('DRIVER={SQLite3};SERVER=localhost;DATABASE='+db)
 # Opening a cursor
 cursor = cnxn.cursor()
-#queue = deque()
+queue = deque()
 threads = []
 alive = True
 lock = threading.RLock()
 
 # Thread that runs in the background
 # Constantly stores the received alerts
-def daemon_receive_alerts():
+def daemon_store_transients():
     while alive:
         lock.acquire()
         try:
             # Save loc and magnitude
-            loc = 1
+            loc = '1'
             magnitude = 1
             # Find right transient
             name = "fgjh"
 
-            query = "Select TransientID From Transient Where Class='%s' AND Location = %d" %(name, loc)
+            query = "Select TransientID From Transient Where Class='%s' AND Location = %s" %(name, loc)
 
             cursor.execute(query)
             row = cursor.fetchone()
@@ -67,14 +69,14 @@ def daemon_receive_alerts():
                 t = row[0]
             # If transient is not stored yet
             except TypeError:
-                cursor.execute("Insert into Transient ( Class, Location, ModelID, LastClassifiedWith, Classified ) VALUES ('%s', %d, 1, 1, False)" % (name, loc))
+                cursor.execute("Insert into Transient ( Class, Location, ModelID, LastClassifiedWith, Classified ) VALUES ('%s', %s, 1, 1, 0)" % (name, loc))
                 cursor.commit()
                 cursor.execute(query)
                 row = cursor.fetchone()
                 t = row[0]
 
             # store Observation
-            cursor.execute("INSERT INTO Observation ( Location, Magnitude, TransientID ) VALUES ( %d, %d, %d)" %(loc, magnitude, t))
+            cursor.execute("INSERT INTO Observation ( Location, Magnitude, TransientID ) VALUES ( %s, %d, %d)" %(loc, magnitude, t))
             cursor.commit()
             # testing purpose
             # print("Alert received")
@@ -84,11 +86,15 @@ def daemon_receive_alerts():
             lock.release()
             # time.sleep(0.1)
 
+def daemon_receive_alerts():
+    while queue:
+        i=0
+
 def daemon_send_transients():
     while alive:
         lock.acquire()
         try:
-            query = "Select * From Transient Where Classified = True"
+            query = "Select * From Transient Where Classified = 1"
             # store Observation
             cursor.execute(query)
             row = cursor.fetchone()
@@ -111,9 +117,11 @@ def daemon_send_transients():
 # create a thread that runs the daemon_receive_alerts method
 Alertstream = threading.Thread(name='Alertstream', target=daemon_receive_alerts)
 Transientstream = threading.Thread(name='Transientstream', target=daemon_send_transients)
+DataBasestream = threading.Thread(name='DataBasestream', target=daemon_store_transients)
 # run the thread
 Alertstream.start()
 Transientstream.start()
+DataBasestream.start()
 
 # being MAIN LOOP
 # MAIN LOOP
@@ -125,8 +133,8 @@ try:
         print("2 Show Classifiers")
         print("3 Show Models")
         print("4 Quit")
-        cmd1 = input("Enter digit: ")
-
+        cmd1 = raw_input("Enter digit: ")
+        # cmd1 = input("Enter digit: ")
         if cmd1 == str(1):
             print("Choose File")
         # CLASSIFIER
@@ -145,19 +153,23 @@ try:
                 print("2 Change Classifier [-ID]")
                 print("3 Delete Classifier [-ID]")
                 print("4 Back")
-                cmd2 = input("Enter digit: ").split()
+                cmd2 = raw_input("Enter digit: ").split()
+                # cmd2 = input("Enter digit: ").split()
 
                 try:
                     if len(cmd2) == 1 and (cmd2[0] != '1' and cmd2[0] != '4'):
                         print("Please choose the ID of the Classifier (e.g. -1)")
                     elif cmd2[0] == str(1):
                         try:
-                            name = input("Name: ")
-                            min = float(input("Minimum value: "))
-                            max = float(input("Maximum value: "))
-                            if min > max:
-                                raise ValueError
-                            desc = input("Transient model (string or ID): ")
+                            name = raw_input("Name: ")
+                            min = raw_input("Minimum value: ")
+                            max = raw_input("Maximum value: ")
+                            desc = raw_input("Transient model (string or ID): ")
+                            # name = input("Name: ")
+                            # min = float(input("Minimum value: "))
+                            # max = float(input("Maximum value: "))
+                            # desc = input("Transient model (string or ID): ")
+
                             lock.acquire()
                             try:
                                 # get model ID
@@ -192,12 +204,15 @@ try:
                             id = int(cmd2[1][1:])
                             if cmd2[1][:1] == '-' and id:
                                 try:
-                                    name = input("Name: ")
-                                    min = float(input("Minimum value: "))
-                                    max = float(input("Maximum value: "))
-                                    if min > max:
-                                        raise ValueError
-                                    desc = input("Transient model (string or ID): ")
+                                    name = raw_input("Name: ")
+                                    min = raw_input("Minimum value: ")
+                                    max = raw_input("Maximum value: ")
+                                    desc = raw_input("Transient model (string or ID): ")
+                                    # name = input("Name: ")
+                                    # min = float(input("Minimum value: "))
+                                    # max = float(input("Maximum value: "))
+                                    # desc = input("Transient model (string or ID): ")
+
                                     lock.acquire()
                                     try:
                                         # get model ID
@@ -236,7 +251,8 @@ try:
                             if cmd2[1][:1] == '-' and id:
                                 incorrect = True
                                 while incorrect:
-                                    a = input("Delete Classifier with ID " + str(id) + "? [y/n]: ")
+                                    a = raw_input("Delete Classifier with ID " + str(id) + "? [y/n]: ")
+                                    # a = input("Delete Classifier with ID " + str(id) + "? [y/n]: ")
                                     if a == 'y':
                                         lock.acquire()
                                         try:
@@ -278,14 +294,15 @@ try:
                 print("2 Change Model [-ID]")
                 print("3 Delete Model [-ID]")
                 print("4 Back")
-                cmd3 = input("Enter digit: ").split()
-
+                cmd3 = raw_input("Enter digit: ").split()
+                # cmd3 = input("Enter digit: ").split()
                 try:
                     if len(cmd3) == 1 and (cmd3[0] != '1' and cmd3[0] != '4'):
                         print("Please choose the ID of the Classifier (e.g. -1)")
                     elif cmd3[0] == str(1):
                         try:
-                            name = input("Name: ")
+                            name = raw_input("Name: ")
+                            # name = input("Name: ")
                             lock.acquire()
                             try:
                                 query = "INSERT INTO Model ( Description ) VALUES ('%s')" % name
@@ -304,7 +321,8 @@ try:
                             id = int(cmd3[1][1:])
                             if cmd3[1][:1] == '-' and id:
                                 try:
-                                    name = input("Name: ")
+                                    name = raw_input("Name: ")
+                                    # name = input("Name: ")
                                     lock.acquire()
                                     try:
                                         query = "UPDATE Model Set Description = '%s' where ModelID = %d" % (name, id)
@@ -327,7 +345,8 @@ try:
                             if cmd3[1][:1] == '-' and id:
                                 incorrect = True
                                 while incorrect:
-                                    a = input("Delete Model with ID " + str(id) + "? [y/n]: ")
+                                    a = raw_input("Delete Model with ID " + str(id) + "? [y/n]: ")
+                                    # a = input("Delete Model with ID " + str(id) + "? [y/n]: ")
                                     if a == 'y':
                                         lock.acquire()
                                         try:
@@ -359,8 +378,13 @@ try:
             alive = False
         else:
             print("Option not available")
+except KeyboardInterrupt:
+    print("\nProgram shut down forcefully")
 finally:
+    alive = False
+    Transientstream.join()
     Alertstream.join()
+    DataBasestream.join()
     cursor.close()
     cnxn.close()
 #
