@@ -23,7 +23,7 @@ class Classifier:
         return substring
 
     def getcmp(self, ineq, i):
-        index = i + 1;
+        index = i + 1
         cmp = ineq[index]
         if ineq[index] == '=' or ineq[index] == '<' or ineq[index] == '>':
             index += 1
@@ -39,6 +39,8 @@ class Classifier:
         sub1 = self.substring(self.__f1)
         check = int(sub1[0])
         f1cmp = self.getcmp(self.__f1, sub1.len())
+        f1res = False
+        f2res = False
         sub2 = self.substring(self.__f2)
         f2cmp = self.getcmp(self.__f1, sub2.len())
         if "+" or "-" or "*" or "/" in sub1:
@@ -69,16 +71,16 @@ class Classifier:
                     index += 2
         if '=' and '>' in self.__f1:
             if check >= f1cmp:
-                return True
+                f1res = True
         elif '=' and '<' in self.__f1:
             if check <= f1cmp:
-                return True
+                f1res = True
         elif '>' in self.__f1:
             if check > f1cmp:
-                return True
+                f1res = True
         elif '<' in self.__f1:
             if check < f1cmp:
-                return True
+                f1res = True
         check = sub2[0]
         index = 0
         if "+" or "-" or "*" or "/" in sub2:
@@ -109,21 +111,23 @@ class Classifier:
                     index += 2
         if '=' and '>' in self.__f2:
             if check >= f2cmp:
-                return True
+                f2res = True
         elif '=' and '<' in self.__f2:
             if check <= f2cmp:
-                return True
+                f2res = True
         elif '>' in self.__f2:
             if check > f2cmp:
-                return True
+                f2res = True
         elif '<' in self.__f2:
             if check < f2cmp:
-                return True
-            else:
-                return False
+                f2res = True
+
+        return f1res and f2res
 
     def classify(self, trans):
-        if self.apply_rules(trans.period):
+        if trans.getnumobs(trans) < 10:
+            return False
+        elif self.apply_rules(trans.period):
             trans.lastClassifier = self.get_type()
             trans.classification = self.get_type()
             return True

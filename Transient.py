@@ -1,41 +1,36 @@
-from Observation import Observation
-from Classifier import Classifier
-from Functiongenerator import get_function_1
-from Functiongenerator import get_function_2
-
 class Transient:
-    # variables
-
-    def __init__(self, loc, cat):
-        self.__location = loc
-        self.__category = cat
+    # create a transient using the ra and dec
+    def __init__(self, r, d):
+        self.__ra = r
+        self.__dec = d
+        # create observations dictionary, period, frequency, and max/min magnitude variables
         self.__observations = []
-        self.t1 = []
-        self.t2 = []
-        self.cls = Classifier()
-        for i in range (0, 100):
-            self.t1.append(get_function_1())
-            self.t2.append(get_function_2(i))
-        self.__s1 = [self.cls.mean(self.t1), self.cls.stdev(self.t2)]
-        self.__s2 = [self.cls.mean(self.t2), self.cls.stdev(self.t2)]
-        self.__classes = {'Supernova':self.__s1, 'Nova':self.__s2}
+        self.lastClassifier = None
+        self.period = None
+        self.freq = None
+        # create classification variable
+        self.classfication = None
 
-    def get_loc(self):
-        return self.__location
+    def set_period(self, p):
+        self.period = p
 
-    def get_cat(self):
-        return self.__category
+    def set_frequency(self, f):
+        self.freq = f
+
+    def get_numobs(self):
+        return self.__observations.len()
+
+    def get_ra(self):
+        return self.__ra
+
+    def get_dec(self):
+        return self.__dec
+
+    def get_classification(self):
+        return self.classification
 
     def add_observation(self, observation):
         self.__observations.append(observation)
-        self.update_probability()
-
 
     def get_observation(self):
         return self.__observations
-
-    def update_probability(self):
-        self.__classification =  self.cls.predict([self.cls.summarize(self.__observations), self.__classes)
-
-    def get_classification(self):
-        return self.__classification
