@@ -1,76 +1,133 @@
 import random
 import math
-# The code for this class is courtesy of Jason Brownlee of
-# machinelearningmastery.com, and can be found at
-# http://www.machinelearningmastery.com/naive-bayes-classifier-scratch-python/
 
 class Classifier:
 
-    def splitDataset(self, dataset, splitRatio):
-        trainSize = int(len(dataset) * splitRatio)
-        trainset = []
-        copy = list(dataset)
-        while len(trainset) < trainSize:
-            index = random.randrange(len(copy))
-            trainset.append(copy.pop(index))
-        return [trainset, copy]
+    def __init__(self, cls, f1, f2, factor):
+        self.__class = cls
+        self.__fact = factor
+        self.__f1 = f1
+        self.__f2 = f2
+        self.alphabet [26] = ['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z']
 
-    def separate_by_class(self, dataset):
-        separated = {}
-        for i in range(len(dataset)):
-            vector = dataset[i]
-            if vector[-1] not in separated:
-                separated[vector[-1]] = []
-            separated[vector[-1]].append(vector)
-        return separated
+    def get_type(self):
+        return self.__class
 
-    def mean(self, numbers):
-        return sum(numbers)/float(len(numbers))
+    def substring(self, ineq):
+        index = 0
+        substring = ""
+        while ineq[index] != '<' and ineq[index] != '>' and ineq[index] != '=':
+            if ineq[index] != ' ':
+                substring = substring + ineq[index]
+            index += 1
+        return substring
 
-    def stdev(self, numbers):
-        avg = self.mean(numbers)
-        variance = sum([pow(x-avg, 2) for x in numbers])/float(len(numbers)-1)
-        return math.sqrt(variance)
+    def getcmp(self, ineq, i):
+        index = i + 1;
+        cmp = ineq[index]
+        if ineq[index] == '=' or ineq[index] == '<' or ineq[index] == '>':
+            index += 1
+            cmp = ineq[index]
+        if index != ineq.len() - 1:
+            index += 1
+            for num in range (index, ineq.len()):
+                cmp = cmp + ineq[num]
+        return int(cmp)
 
-    def summarize(self, dataset):
-        summaries = [(self.mean(self, attribute), self.stdev(self, attribute)) for attribute in zip(*dataset)]
-        del summaries[-1]
-        return summaries
+    def apply_rules(self, i):
+        index = 0
+        sub1 = self.substring(self.__f1)
+        check = int(sub1[0])
+        f1cmp = self.getcmp(self.__f1, sub1.len())
+        sub2 = self.substring(self.__f2)
+        f2cmp = self.getcmp(self.__f1, sub2.len())
+        if "+" or "-" or "*" or "/" in sub1:
+            while index < sub1.len():
+                if sub1[index] == '+':
+                    if sub1[index+1] not in self.alphabet:
+                      check += int(sub1[index+1])
+                    else:
+                        check += i
+                    index += 2
+                elif sub1[index] == '-':
+                    if sub1[index+1] not in self.alphabet:
+                      check -= int(sub1[index+1])
+                    else:
+                        check -= i
+                    index += 2
+                elif sub1[index] == '*':
+                    if sub1[index+1] not in self.alphabet:
+                      check *= int(sub1[index+1])
+                    else:
+                        check *= i
+                    index += 2
+                elif sub1[index] == '/':
+                    if sub1[index+1] not in self.alphabet:
+                      check /= int(sub1[index+1])
+                    else:
+                        check /= i
+                    index += 2
+        if '=' and '>' in self.__f1:
+            if check >= f1cmp:
+                return True
+        elif '=' and '<' in self.__f1:
+            if check <= f1cmp:
+                return True
+        elif '>' in self.__f1:
+            if check > f1cmp:
+                return True
+        elif '<' in self.__f1:
+            if check < f1cmp:
+                return True
+        check = sub2[0]
+        index = 0
+        if "+" or "-" or "*" or "/" in sub2:
+            while index < sub2.len():
+                if sub1[index] == '+':
+                    if sub2[index + 1] not in self.alphabet:
+                        check += int(sub1[index + 1])
+                    else:
+                        check += i
+                    index += 2
+                elif sub2[index] == '-':
+                    if sub2[index + 1] not in self.alphabet:
+                        check -= int(sub2[index + 1])
+                    else:
+                        check -= i
+                    index += 2
+                elif sub2[index] == '*':
+                    if sub2[index + 1] not in self.alphabet:
+                        check *= int(sub2[index + 1])
+                    else:
+                        check *= i
+                    index += 2
+                elif sub2[index] == '/':
+                    if sub2[index + 1] not in self.alphabet:
+                        check /= int(sub1[index + 1])
+                    else:
+                        check /= i
+                    index += 2
+        if '=' and '>' in self.__f2:
+            if check >= f2cmp:
+                return True
+        elif '=' and '<' in self.__f2:
+            if check <= f2cmp:
+                return True
+        elif '>' in self.__f2:
+            if check > f2cmp:
+                return True
+        elif '<' in self.__f2:
+            if check < f2cmp:
+                return True
+            else:
+                return False
 
-    def summarize_by_class(self, dataset):
-        separated = self.separate_by_class(self, dataset)
-        summaries = {}
-        for classValue, instances in separated.iteritems():
-            summaries[classValue] = self.summarize(instances)
-        return summaries
-
-    def calculate_probability(self, x, mean, stdev):
-        exponent = math.exp(-(math.pow(x-mean, 2)/(2*math.pow(stdev, 2))))
-        return (1/(math.sqrt(2*math.pi)*stdev))*exponent
-
-    def calculate_class_probabilities(self, summaries, inputVector):
-        probabilities = {}
-        for classValue, classSummaries in summaries.iteritems():
-            probabilities[classValue] = 1
-            for i in range(len(classSummaries)):
-                mean, stdev = classSummaries[i]
-                x = inputVector[i]
-                probabilities[classValue] *= self.calculateProbability(self, x, mean, stdev)
-        return probabilities
-
-    def predict(self, summaries, inputVector):
-        probs = self.calculateClassProbabilities(self, summaries, inputVector)
-        bestLabel, bestProb = None, -1
-        for classValue, prob in probs.iteritems():
-            if bestLabel is None or prob > bestProb:
-                bestProb = prob
-                bestLabel = classValue
-        return bestLabel
-
-    def get_predictions(self, summaries, testSet):
-        predictions = []
-        for i in range(len(testSet)):
-            result = self.predict(self, summaries, testSet[i])
-            predictions.append(result)
-        return predictions
+    def classify(self, trans):
+        if self.apply_rules(trans.period):
+            trans.lastClassifier = self.get_type()
+            trans.classification = self.get_type()
+            return True
+        else:
+            trans.lastClassifier = self.get_type()
+            return False
 
