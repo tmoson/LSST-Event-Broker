@@ -69,6 +69,8 @@ class Classifier:
                     else:
                         check /= i
                     index += 2
+        else:
+            check = i
         if '=' and '>' in self.__f1:
             if check >= f1cmp:
                 f1res = True
