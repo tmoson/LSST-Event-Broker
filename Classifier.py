@@ -129,11 +129,27 @@ class Classifier:
     def classify(self, trans):
         if trans.getnumobs(trans) < 10:
             return False
-        elif self.apply_rules(trans.period):
-            trans.lastClassifier = self.get_type()
-            trans.classification = self.get_type()
-            return True
-        else:
-            trans.lastClassifier = self.get_type()
-            return False
-
+        elif self.__fact == "period":
+            if self.apply_rules(trans.period):
+                trans.lastClassifier = self.get_type()
+                trans.classification = self.get_type()
+                return True
+            else:
+                trans.lastClassifier = self.get_type()
+                return False
+        elif self.__fact == "frequency":
+            if self.apply_rules(trans.freq):
+                trans.lastClassifier = self.get_type()
+                trans.classification = self.get_type()
+                return True
+            else:
+                trans.lastClassifier = self.get_type()
+                return False
+        elif self.__fact == "magnitude":
+            if self.apply_rules(trans.magnitude):
+                trans.lastClassifier = self.get_type()
+                trans.classification = self.get_type()
+                return True
+            else:
+                trans.lastClassifier = self.get_type()
+                return False

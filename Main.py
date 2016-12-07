@@ -1,5 +1,6 @@
 from Observation import Observation
 from Transient import Transient
+from Classifier import Classifier
 from random import randint
 
 # open file
@@ -7,6 +8,11 @@ trans_file = open("trans_db/transients.txt", 'r')
 t_num_lines = sum(1 for line in trans_file)  # number of lines in the file
 trans_file.close()
 transients = []  # create list of transients
+
+
+# declare a classifier like so: Classifier("transient type", "lower bound", "upper bound", "determining factor")
+cls = Classifier("rr lyrae", "i<.3", "i>=1.1", "period")
+# this will classify a transient as a rr lyrae if its period falls within .3 and 1.1 days
 
 
 print('number of lines: ', t_num_lines)
