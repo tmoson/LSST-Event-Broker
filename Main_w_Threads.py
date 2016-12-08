@@ -88,7 +88,7 @@ def daemon_store_transients():
                 t = row[0]
             # If transient is not stored yet
             except TypeError:
-                cursor.execute("Insert into Transient ( Class, RightAscension, Declination, Location, LastClassifiedWith, Classified ) VALUES ('%s',1, 2,  '%s', 1, 0)" % (name, loc))
+                cursor.execute("Insert into Transient ( Class, RightAscension, Declination, Location, LastClassifiedWith, Classified ) VALUES ('%s', 0, 1,  '%s', 1, 0)" % (name, loc))
                 cursor.commit()
                 cursor.execute(query)
                 row = cursor.fetchone()
@@ -118,9 +118,9 @@ def daemon_store_transients():
             query = "Select Min, Max, Description From Classifier, Model where Classifier.ClassifierID = %d and Classifier.ModelID  = Model.ModelID " % cid2
             cursor.execute(query)
             row = cursor.fetchone()
-            # c = Classifier(row.Description, row.Min, row.Max, 1)
+            c = Classifier(row.Description, row.Min, row.Max, 1)
             # calculate
-            # bln = c.classify(transienttmp)
+            bln = c.classify(transienttmp)
             bln = False
 
             if bln:
