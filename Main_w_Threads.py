@@ -1,7 +1,9 @@
 import threading
 import pyodbc
 import os
-import time
+from Transient import Transient
+from Classifier import Classifier
+from Observation import Observation
 from collections import deque
 
 def buildTableClassifiers():
@@ -10,16 +12,33 @@ def buildTableClassifiers():
         query = "Select ClassifierID, Name, Min, Max, Description From Classifier, Model Where Classifier.ModelID = Model.ModelID"
         cursor.execute(query)
         rows = cursor.fetchall()
-        print("+----+---------------------+------+------+---------------------+")
-        print("|\033[1m %2s \033[0m|\033[1m %19s \033[0m|\033[1m %4s \033[0m|\033[1m %4s \033[0m|\033[1m %19s \033[0m|" % (
-            'ID', 'Name', 'Min', 'Max', 'Classifies'))
-        print("|----+---------------------+------+------+---------------------|")
+        print("+----+----------------------------------------+----------------------------------------+----------------------------------------+---------------------+")
+        print("|\033[1m %2s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %19s \033[0m|" % (
+            'ID', 'Name', 'Equation1', 'Equation2', 'Classifies'))
+        print("+----+----------------------------------------+----------------------------------------+----------------------------------------+---------------------+")
         for row in rows:
-            print("|%4s| %20s| %5s| %5s| %20s|" % (row.ClassifierID, row.Name, row.Min, row.Max, row.Description))
-        print("+----+---------------------+------+------+---------------------+")
+            print("|%4s| %39s| %39s| %39s| %20s|" % (row.ClassifierID, row.Name, row.Min, row.Max, row.Description))
+            print(
+            "+----+----------------------------------------+----------------------------------------+----------------------------------------+---------------------+")
     finally:
         lock.release()
 
+def buildTableTransients():
+    lock.acquire()
+    try:
+        query = "Select TransientID, Class, Location, Name From Transient, Classifier Where Transient.LastClassifiedWith = Classifier.ClassifierID"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        print("+----+----------------------------------------+----------------------------------------+----------------------------------------+")
+        print("|\033[1m %2s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|" % (
+            'ID', 'Class', 'Location', 'Classifier'))
+        print("+----+----------------------------------------+----------------------------------------+----------------------------------------+")
+        for row in rows:
+            print("|%4s| %39s| %39s| %39s|" % (row.TransientID, row.Class, row.Location, row.Name))
+            print(
+            "+----+----------------------------------------+----------------------------------------+----------------------------------------+")
+    finally:
+        lock.release()
 
 def buildTableModel():
     lock.acquire()
@@ -52,7 +71,7 @@ lock = threading.RLock()
 # Thread that runs in the background
 # Constantly stores the received alerts
 def daemon_store_transients():
-    while alive:
+    while alive or queue:
         lock.acquire()
         try:
             # Save loc and magnitude
@@ -61,7 +80,7 @@ def daemon_store_transients():
             # Find right transient
             name = "fgjh"
 
-            query = "Select TransientID From Transient Where Class='%s' AND Location = %s" %(name, loc)
+            query = "Select TransientID From Transient Where Class='%s' AND Location = '%s'" %(name, loc)
 
             cursor.execute(query)
             row = cursor.fetchone()
@@ -69,16 +88,46 @@ def daemon_store_transients():
                 t = row[0]
             # If transient is not stored yet
             except TypeError:
-                cursor.execute("Insert into Transient ( Class, Location, ModelID, LastClassifiedWith, Classified ) VALUES ('%s', %s, 1, 1, 0)" % (name, loc))
+                cursor.execute("Insert into Transient ( Class, RightAscension, Declination, Location, LastClassifiedWith, Classified ) VALUES ('%s',1, 2,  '%s', 1, 0)" % (name, loc))
                 cursor.commit()
                 cursor.execute(query)
                 row = cursor.fetchone()
                 t = row[0]
 
             # store Observation
-            cursor.execute("INSERT INTO Observation ( Location, Magnitude, TransientID ) VALUES ( %s, %d, %d)" %(loc, magnitude, t))
+            cursor.execute("INSERT INTO Observation (Time, Location, Magnitude, TransientID ) VALUES ('1', '%s', %d, %d)" %(loc, magnitude, t))
             cursor.commit()
-            # testing purpose
+
+            # create tmp Transient and calculate
+            query = "Select RightAscension, Declination, LastClassifiedWith From Transient where TransientID = %d" % t
+            cursor.execute(query)
+            row = cursor.fetchone()
+            cid2 = row.LastClassifiedWith
+            transienttmp = Transient(row.RightAscension, row.Declination)
+
+            # get Observations
+            query = "Select Observation.Time, Observation.Location, Observation.Magnitude From Transient, Observation where Observation.TransientID = %d and Observation.TransientID = Transient.TransientID" % t
+            cursor.execute(query)
+            row = cursor.fetchall()
+
+            # add observations
+            for r in row:
+                transienttmp.add_observation(Observation(r.Time, r.Location, r.Magnitude))
+
+            # Create Classifier Instance
+            query = "Select Min, Max, Description From Classifier, Model where Classifier.ClassifierID = %d and Classifier.ModelID  = Model.ModelID " % cid2
+            cursor.execute(query)
+            row = cursor.fetchone()
+            # c = Classifier(row.Description, row.Min, row.Max, 1)
+            # calculate
+            # bln = c.classify(transienttmp)
+            bln = False
+
+            if bln:
+                query = "Update Transient Set Classified =  1 where Transient.TransientID = %d" % t
+                cursor.execute(query)
+                cursor.commit()
+
             # print("Alert received")
         except pyodbc.DatabaseError:
             print("Oberservation storage error")
@@ -136,7 +185,69 @@ try:
         cmd1 = raw_input("Enter digit: ")
         # cmd1 = input("Enter digit: ")
         if cmd1 == str(1):
-            print("Choose File")
+            buildTableTransients()
+            tid = raw_input("Enter TransientID: ")
+            cid = raw_input("Enter ClassiferID or Classifier name: ")
+
+            lock.acquire()
+            try:
+                # get Classifier ID
+                tid = int(tid)
+
+                try:
+                    cid = int(cid)
+                    query = "Select ClassifierID From Classifier Where Classifier.ClassifierID=%d" % cid
+                    cursor.execute(query)
+                    row = cursor.fetchone()
+                    if not row:
+                        raise pyodbc.DatabaseError
+                except ValueError:
+                    query = "Select ClassifierID From Classifier Where Classifier.Name='%s'" % cid
+                    cursor.execute(query)
+                    row = cursor.fetchone()
+                    if not row:
+                        raise pyodbc.DatabaseError
+                    else:
+                        cid = row.ClassifierID
+                query = "Update Transient Set LastClassifiedWith = %d where Transient.TransientID = %d" %(cid, tid)
+                cursor.execute(query)
+                cursor.commit()
+
+                # create tmp Transient and calculate
+                query = "Select RightAscension, Declination From Transient where TransientID = %d" %tid
+                cursor.execute(query)
+                row = cursor.fetchone()
+                transienttmp = Transient(row.RightAscension, row.Declination)
+
+                # get Observations
+                query = "Select Observation.Time, Observation.Location, Observation.Magnitude From Transient, Observation where Observation.TransientID = %d and Observation.TransientID = Transient.TransientID" % tid
+                cursor.execute(query)
+                row = cursor.fetchall()
+
+                # add observations
+                for r in row:
+                    transienttmp.add_observation(Observation(r.Time, r.Location, r.Magnitude))
+
+                # Create Classifier Instance
+                query = "Select Min, Max, Description From Classifier, Model where Classifier.ClassifierID = %d and Classifier.ModelID  = Model.ModelID " % cid
+                cursor.execute(query)
+                row = cursor.fetchone()
+                c = Classifier(row.Description, row.Min, row.Max, 1)
+                # calculate
+                bln = c.classify(transienttmp)
+
+                if bln:
+                    query = "Update Transient Set Classified =  1 where Transient.TransientID = %d" %tid
+                    cursor.execute(query)
+                    cursor.commit()
+                    # print("true")
+                buildTableTransients()
+            except pyodbc.DatabaseError:
+                print("ClassifierID not found")
+            except ValueError:
+                print("Input error")
+            finally:
+                lock.release()
         # CLASSIFIER
         elif cmd1 == str(2):
             lock.acquire()
@@ -162,9 +273,9 @@ try:
                     elif cmd2[0] == str(1):
                         try:
                             name = raw_input("Name: ")
-                            min = raw_input("Minimum value: ")
-                            max = raw_input("Maximum value: ")
-                            desc = raw_input("Transient model (string or ID): ")
+                            min = raw_input("Equation 1: ")
+                            max = raw_input("Equation 2: ")
+                            desc = raw_input("Transient model (name or ID): ")
                             # name = input("Name: ")
                             # min = float(input("Minimum value: "))
                             # max = float(input("Maximum value: "))
@@ -188,7 +299,7 @@ try:
                                         raise pyodbc.DatabaseError
                                     else:
                                         desc = row.ModelID
-                                query = "INSERT INTO Classifier ( Name, Min, Max, ModelID ) VALUES ('%s', %d, %d, %d)" % (name, min, max, desc)
+                                query = "INSERT INTO Classifier ( Name, Min, Max, ModelID ) VALUES ('%s', '%s', '%s', %d)" % (name, min, max, desc)
                                 cursor.execute(query)
                                 cursor.commit()
                             except pyodbc.DatabaseError:
@@ -205,8 +316,8 @@ try:
                             if cmd2[1][:1] == '-' and id:
                                 try:
                                     name = raw_input("Name: ")
-                                    min = raw_input("Minimum value: ")
-                                    max = raw_input("Maximum value: ")
+                                    min = raw_input("Equation 1: ")
+                                    max = raw_input("Equation 2: ")
                                     desc = raw_input("Transient model (string or ID): ")
                                     # name = input("Name: ")
                                     # min = float(input("Minimum value: "))
@@ -231,7 +342,7 @@ try:
                                                 raise pyodbc.DatabaseError
                                             else:
                                                 desc = row.ModelID
-                                        query = "UPDATE Classifier Set Name = '%s', Min = %d,  Max = %d, ModelID = %d where ClassifierID = %d" %(name, min, max, desc, id)
+                                        query = "UPDATE Classifier Set Name = '%s', Min = '%s',  Max = '%s', ModelID = %d where ClassifierID = %d" %(name, min, max, desc, id)
                                         cursor.execute(query)
                                         cursor.commit()
                                     except pyodbc.DatabaseError:
