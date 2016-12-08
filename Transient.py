@@ -18,7 +18,7 @@ class Transient:
         self.freq = f
 
     def get_numobs(self):
-        return self.__observations.len()
+        return len(self.__observations)
 
     def get_ra(self):
         return self.__ra
