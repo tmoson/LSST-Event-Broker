@@ -9,7 +9,7 @@ class Transient:
         self.period = None
         self.freq = None
         # create classification variable
-        self.classfication = None
+        self.classification = None
 
     def set_period(self, p):
         self.period = p

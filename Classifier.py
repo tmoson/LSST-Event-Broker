@@ -1,14 +1,15 @@
 import random
 import math
 
-class Classifier:
 
+class Classifier:
     def __init__(self, cls, f1, f2, factor):
+        self.alphabet = [26]
         self.__class = cls
         self.__fact = factor
         self.__f1 = f1
         self.__f2 = f2
-        self.alphabet [26] = ['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z']
+        self.alphabet = {'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z'}
 
     def get_type(self):
         return self.__class
@@ -30,7 +31,7 @@ class Classifier:
             cmp = ineq[index]
         if index != ineq.len() - 1:
             index += 1
-            for num in range (index, ineq.len()):
+            for num in range(index, ineq.len()):
                 cmp = cmp + ineq[num]
         return int(cmp)
 
@@ -46,26 +47,26 @@ class Classifier:
         if "+" or "-" or "*" or "/" in sub1:
             while index < sub1.len():
                 if sub1[index] == '+':
-                    if sub1[index+1] not in self.alphabet:
-                      check += int(sub1[index+1])
+                    if sub1[index + 1] not in self.alphabet:
+                        check += int(sub1[index + 1])
                     else:
                         check += i
                     index += 2
                 elif sub1[index] == '-':
-                    if sub1[index+1] not in self.alphabet:
-                      check -= int(sub1[index+1])
+                    if sub1[index + 1] not in self.alphabet:
+                        check -= int(sub1[index + 1])
                     else:
                         check -= i
                     index += 2
                 elif sub1[index] == '*':
-                    if sub1[index+1] not in self.alphabet:
-                      check *= int(sub1[index+1])
+                    if sub1[index + 1] not in self.alphabet:
+                        check *= int(sub1[index + 1])
                     else:
                         check *= i
                     index += 2
                 elif sub1[index] == '/':
-                    if sub1[index+1] not in self.alphabet:
-                      check /= int(sub1[index+1])
+                    if sub1[index + 1] not in self.alphabet:
+                        check /= int(sub1[index + 1])
                     else:
                         check /= i
                     index += 2
