@@ -128,7 +128,7 @@ class Classifier:
         return f1res and f2res
 
     def classify(self, trans):
-        if trans.getnumobs(trans) < 10:
+        if trans.get_numobs() < 10:
             return False
         elif self.__fact == "period":
             if self.apply_rules(trans.period):
