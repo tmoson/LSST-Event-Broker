@@ -9,13 +9,16 @@ from collections import deque
 def buildTableClassifiers():
     lock.acquire()
     try:
+        # get table data
         query = "Select ClassifierID, Name, Min, Max, Description From Classifier, Model Where Classifier.ModelID = Model.ModelID"
         cursor.execute(query)
         rows = cursor.fetchall()
         print("+----+----------------------------------------+----------------------------------------+----------------------------------------+---------------------+")
+        # create headers
         print("|\033[1m %2s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %19s \033[0m|" % (
             'ID', 'Name', 'Equation1', 'Equation2', 'Classifies'))
         print("+----+----------------------------------------+----------------------------------------+----------------------------------------+---------------------+")
+        # fill table with data
         for row in rows:
             print("|%4s| %39s| %39s| %39s| %20s|" % (row.ClassifierID, row.Name, row.Min, row.Max, row.Description))
             print(
@@ -26,13 +29,16 @@ def buildTableClassifiers():
 def buildTableTransients():
     lock.acquire()
     try:
+        # get table data
         query = "Select TransientID, Class, Location, Name From Transient, Classifier Where Transient.LastClassifiedWith = Classifier.ClassifierID"
         cursor.execute(query)
         rows = cursor.fetchall()
         print("+----+----------------------------------------+----------------------------------------+----------------------------------------+")
+        # create headers
         print("|\033[1m %2s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|\033[1m %38s \033[0m|" % (
             'ID', 'Class', 'Location', 'Classifier'))
         print("+----+----------------------------------------+----------------------------------------+----------------------------------------+")
+        # fill table with data
         for row in rows:
             print("|%4s| %39s| %39s| %39s|" % (row.TransientID, row.Class, row.Location, row.Name))
             print(
@@ -43,13 +49,16 @@ def buildTableTransients():
 def buildTableModel():
     lock.acquire()
     try:
+        # get table data
         query = "Select ModelID, Description From Model"
         cursor.execute(query)
         rows = cursor.fetchall()
         print("+----+---------------------+")
+        # create headers
         print("|\033[1m %2s \033[0m|\033[1m %19s \033[0m|" % (
             'ID', 'Description'))
         print("|----+---------------------|")
+        # fill table with data
         for row in rows:
             print("|%4s| %20s|" % (row.ModelID, row.Description))
         print("+----+---------------------+")
@@ -59,12 +68,13 @@ def buildTableModel():
 
 #connect to database
 db = os.getcwd() + "/EventBroker.db"
-#cnxn = pyodbc.connect(r'DSN=MyConnection;DBQ='+db)
 cnxn = pyodbc.connect('DRIVER={SQLite3};SERVER=localhost;DATABASE='+db)
 # Opening a cursor
 cursor = cnxn.cursor()
+# create queue to store observation events
 queue = deque()
-threads = []
+
+# 
 alive = True
 lock = threading.RLock()
 
@@ -74,19 +84,21 @@ def daemon_store_transients():
     while alive or queue:
         lock.acquire()
         try:
+            # PLACEHOLDER - get Observations from queue and retrieve data form it
+            # change when event stream connection is avaialable
             # Save loc and magnitude
             loc = '1'
             magnitude = 1
+            name = "Test"
+            
             # Find right transient
-            name = "fgjh"
-
             query = "Select TransientID From Transient Where Class='%s' AND Location = '%s'" %(name, loc)
-
             cursor.execute(query)
+            # retrieve data
             row = cursor.fetchone()
             try:
                 t = row[0]
-            # If transient is not stored yet
+            # If transient is not stored yet create and insert into database
             except TypeError:
                 cursor.execute("Insert into Transient ( Class, RightAscension, Declination, Location, LastClassifiedWith, Classified ) VALUES ('%s', 0, 1,  '%s', 1, 0)" % (name, loc))
                 cursor.commit()
@@ -122,7 +134,8 @@ def daemon_store_transients():
             # calculate
             bln = c.classify(transienttmp)
             bln = False
-
+            
+            # if transient got classified, update database
             if bln:
                 query = "Update Transient Set Classified =  1 where Transient.TransientID = %d" % t
                 cursor.execute(query)
@@ -133,16 +146,20 @@ def daemon_store_transients():
             print("Oberservation storage error")
         finally:
             lock.release()
-            # time.sleep(0.1)
 
+# PLACEHOLDER - add event stream listener here
 def daemon_receive_alerts():
-    while queue:
+    while alive:
+        # fill queue
         i=0
 
+# Thread that searchs through the database for classified transients and send it back through the event stream
+# Sending back the transient is still to implement
 def daemon_send_transients():
     while alive:
         lock.acquire()
         try:
+            # Find classified transients
             query = "Select * From Transient Where Classified = 1"
             # store Observation
             cursor.execute(query)
@@ -163,7 +180,7 @@ def daemon_send_transients():
             lock.release()
             # time.sleep(0.1)
 
-# create a thread that runs the daemon_receive_alerts method
+# create threads that run in the background
 Alertstream = threading.Thread(name='Alertstream', target=daemon_receive_alerts)
 Transientstream = threading.Thread(name='Transientstream', target=daemon_send_transients)
 DataBasestream = threading.Thread(name='DataBasestream', target=daemon_store_transients)
@@ -493,9 +510,11 @@ except KeyboardInterrupt:
     print("\nProgram shut down forcefully")
 finally:
     alive = False
-    Transientstream.join()
-    Alertstream.join()
-    DataBasestream.join()
+    # wait for Threads to end
+    Transientstream.join() # first stop searching through the database
+    Alertstream.join() # cut off the event stream
+    DataBasestream.join() # store remaining events
+    # close database connection
     cursor.close()
     cnxn.close()
 #
